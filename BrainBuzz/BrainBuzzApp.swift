@@ -13,6 +13,11 @@ struct BrainBuzzApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
+            Quiz.self,
+            Question.self,
+            QuizResult.self,
+            MotivationQuote.self,
+            UserProfile.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +30,7 @@ struct BrainBuzzApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppCoordinator()
         }
         .modelContainer(sharedModelContainer)
     }
