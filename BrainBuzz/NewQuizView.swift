@@ -19,9 +19,8 @@ struct NewQuizView: View {
     
     var body: some View {
         NavigationView {
-            GeometryReader { geometry in
-                ScrollView {
-                    VStack(spacing: 24) {
+            ScrollView {
+                VStack(spacing: 24) {
                     // Header
                     VStack(spacing: 16) {
                         Text("Create New Quiz")
@@ -121,12 +120,9 @@ struct NewQuizView: View {
                     .cornerRadius(16)
                     .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
                     
-                        Spacer()
-                    }
-                    .frame(maxWidth: min(geometry.size.width, 600)) // Limit width on iPad
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                    Spacer()
                 }
+                .padding()
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

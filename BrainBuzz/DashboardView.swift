@@ -17,18 +17,17 @@ struct DashboardView: View {
     
     var body: some View {
         NavigationView {
-            GeometryReader { geometry in
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Welcome Header
-                        HStack {
-                            Text(userSession.currentUser?.firstName != nil ? "Welcome, \(userSession.currentUser!.firstName)!" : "Welcome!")
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                            Spacer()
-                        }
-                        .padding(.horizontal)
-                        .padding(.top)
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Welcome Header
+                    HStack {
+                        Text(userSession.currentUser?.firstName != nil ? "Welcome, \(userSession.currentUser!.firstName)!" : "Welcome!")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
                     
                     // New Quiz Button
                     Button(action: {
@@ -70,10 +69,7 @@ struct DashboardView: View {
                         .padding(.top)
                     }
                     
-                        Spacer(minLength: 100) // Space for tab bar
-                    }
-                    .frame(maxWidth: min(geometry.size.width, 600)) // Limit width on iPad
-                    .frame(maxWidth: .infinity)
+                    Spacer(minLength: 100) // Space for tab bar
                 }
             }
             .navigationBarHidden(true)
