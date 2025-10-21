@@ -26,7 +26,7 @@ struct AppCoordinator: View {
     var body: some View {
         ZStack {
             Color.white
-                .ignoresSafeArea()
+                .ignoresSafeArea(.all, edges: .all)
             
             switch currentScreen {
             case .splash:
