@@ -14,29 +14,33 @@ struct ContentView: View {
     @State private var selectedTab = 1 // Start with Dashboard
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            LibraryView()
-                .tabItem {
-                    Image(systemName: "wrench.and.screwdriver.fill")
-                    Text("Tools")
-                }
-                .tag(0)
-            
-            DashboardView()
-                .tabItem {
-                    Image(systemName: "bolt")
-                    Text("Dashboard")
-                }
-                .tag(1)
-            
-            ProfileView()
-                .tabItem {
-                    Image(systemName: "person")
-                    Text("Profile")
-                }
-                .tag(2)
+        GeometryReader { geometry in
+            TabView(selection: $selectedTab) {
+                LibraryView()
+                    .tabItem {
+                        Image(systemName: "wrench.and.screwdriver.fill")
+                        Text("Tools")
+                    }
+                    .tag(0)
+                
+                DashboardView()
+                    .tabItem {
+                        Image(systemName: "bolt")
+                        Text("Dashboard")
+                    }
+                    .tag(1)
+                
+                ProfileView()
+                    .tabItem {
+                        Image(systemName: "person")
+                        Text("Profile")
+                    }
+                    .tag(2)
+            }
+            .accentColor(.blue)
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .accentColor(.blue)
+        .ignoresSafeArea(.all, edges: .all)
         .onAppear {
             setupInitialData()
         }
