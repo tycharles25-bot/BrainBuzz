@@ -15,9 +15,13 @@ struct ProfileView: View {
     @State private var showingLogoutAlert = false
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
+        ZStack {
+            Color(.systemBackground)
+                .ignoresSafeArea()
+            
+            NavigationView {
+                ScrollView {
+                    VStack(spacing: 24) {
                     // Profile Header
                     VStack(spacing: 16) {
                         // Profile Picture
@@ -103,15 +107,16 @@ struct ProfileView: View {
                     
                     Spacer(minLength: 100) // Space for tab bar
                 }
-            }
-            .navigationBarHidden(true)
-            .alert("Sign Out", isPresented: $showingLogoutAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Sign Out", role: .destructive) {
-                    userSession.logout()
                 }
-            } message: {
-                Text("Are you sure you want to sign out?")
+                .navigationBarHidden(true)
+                .alert("Sign Out", isPresented: $showingLogoutAlert) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Sign Out", role: .destructive) {
+                        userSession.logout()
+                    }
+                } message: {
+                    Text("Are you sure you want to sign out?")
+                }
             }
         }
     }
