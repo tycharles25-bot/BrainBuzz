@@ -18,9 +18,13 @@ struct NewQuizView: View {
     @State private var isGenerating = false
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
+        ZStack {
+            Color(.systemBackground)
+                .ignoresSafeArea()
+            
+            NavigationView {
+                ScrollView {
+                    VStack(spacing: 24) {
                     // Header
                     VStack(spacing: 16) {
                         Text("Create New Quiz")
@@ -123,12 +127,13 @@ struct NewQuizView: View {
                     Spacer()
                 }
                 .padding()
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+                }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
                     }
                 }
             }

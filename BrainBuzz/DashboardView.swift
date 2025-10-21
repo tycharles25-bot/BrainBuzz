@@ -16,9 +16,13 @@ struct DashboardView: View {
     @State private var showingNewQuiz = false
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
+        ZStack {
+            Color(.systemBackground)
+                .ignoresSafeArea()
+            
+            NavigationView {
+                ScrollView {
+                    VStack(spacing: 20) {
                     // Welcome Header
                     HStack {
                         Text(userSession.currentUser?.firstName != nil ? "Welcome, \(userSession.currentUser!.firstName)!" : "Welcome!")
@@ -71,8 +75,9 @@ struct DashboardView: View {
                     
                     Spacer(minLength: 100) // Space for tab bar
                 }
+                }
+                .navigationBarHidden(true)
             }
-            .navigationBarHidden(true)
         }
         .sheet(isPresented: $showingNewQuiz) {
             NewQuizView()

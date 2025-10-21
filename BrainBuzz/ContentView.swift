@@ -14,29 +14,34 @@ struct ContentView: View {
     @State private var selectedTab = 1 // Start with Dashboard
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            LibraryView()
-                .tabItem {
-                    Image(systemName: "wrench.and.screwdriver.fill")
-                    Text("Tools")
-                }
-                .tag(0)
+        ZStack {
+            Color(.systemBackground)
+                .ignoresSafeArea()
             
-            DashboardView()
-                .tabItem {
-                    Image(systemName: "bolt")
-                    Text("Dashboard")
-                }
-                .tag(1)
-            
-            ProfileView()
-                .tabItem {
-                    Image(systemName: "person")
-                    Text("Profile")
-                }
-                .tag(2)
+            TabView(selection: $selectedTab) {
+                LibraryView()
+                    .tabItem {
+                        Image(systemName: "wrench.and.screwdriver.fill")
+                        Text("Tools")
+                    }
+                    .tag(0)
+                
+                DashboardView()
+                    .tabItem {
+                        Image(systemName: "bolt")
+                        Text("Dashboard")
+                    }
+                    .tag(1)
+                
+                ProfileView()
+                    .tabItem {
+                        Image(systemName: "person")
+                        Text("Profile")
+                    }
+                    .tag(2)
+            }
+            .accentColor(.blue)
         }
-        .accentColor(.blue)
         .onAppear {
             setupInitialData()
         }
