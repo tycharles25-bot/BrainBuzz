@@ -55,6 +55,8 @@ struct AppCoordinator: View {
             case .main:
                 ContentView()
                     .environmentObject(userSession)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea(.all, edges: .all)
                     .transition(.opacity)
             }
         }
