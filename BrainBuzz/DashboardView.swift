@@ -17,17 +17,18 @@ struct DashboardView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Welcome Header
-                    HStack {
-                        Text(userSession.currentUser?.firstName != nil ? "Welcome, \(userSession.currentUser!.firstName)!" : "Welcome!")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                        Spacer()
-                    }
-                    .padding(.horizontal)
-                    .padding(.top)
+            GeometryReader { geometry in
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Welcome Header
+                        HStack {
+                            Text(userSession.currentUser?.firstName != nil ? "Welcome, \(userSession.currentUser!.firstName)!" : "Welcome!")
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+                        .padding(.top)
                     
                     // New Quiz Button
                     Button(action: {
@@ -44,7 +45,7 @@ struct DashboardView: View {
                                 .foregroundColor(.white)
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: UIScreen.main.bounds.height * 0.25) // Quarter of screen height
+                        .frame(height: 200) // Fixed height that works on all devices
                         .background(Color.black)
                         .cornerRadius(20)
                         .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
@@ -69,7 +70,10 @@ struct DashboardView: View {
                         .padding(.top)
                     }
                     
-                    Spacer(minLength: 100) // Space for tab bar
+                        Spacer(minLength: 100) // Space for tab bar
+                    }
+                    .frame(maxWidth: min(geometry.size.width, 600)) // Limit width on iPad
+                    .frame(maxWidth: .infinity)
                 }
             }
             .navigationBarHidden(true)
