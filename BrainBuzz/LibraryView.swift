@@ -16,13 +16,9 @@ struct LibraryView: View {
     @State private var showingQuizOfTheDay = false
     
     var body: some View {
-        ZStack {
-            Color(.systemBackground)
-                .ignoresSafeArea()
-            
-            NavigationView {
-                ScrollView {
-                    VStack(spacing: 20) {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 20) {
                     // Header
                     HStack {
                         Text("Tools")
@@ -85,9 +81,8 @@ struct LibraryView: View {
                     
                     Spacer(minLength: 50) // Space for tab bar
                 }
-                }
-                .navigationBarHidden(true)
             }
+            .navigationBarHidden(true)
         }
         .sheet(isPresented: $showingStatistics) {
             StatisticsView()
