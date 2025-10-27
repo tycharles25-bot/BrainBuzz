@@ -29,6 +29,9 @@ struct QuizTakingView: View {
     @State private var isLastAnswerCorrect = false
     @State private var showingAnswerResult = false
     
+    // Watch integration
+    @StateObject private var watchManager = WatchBluetoothManager.shared
+    
     var currentQuestion: Question {
         quiz.questions[currentQuestionIndex]
     }
@@ -251,6 +254,9 @@ struct QuizTakingView: View {
         } else {
             // Increment consecutive wrong answers
             consecutiveWrongAnswers += 1
+            
+            // Trigger watch feedback for wrong answer
+            watchManager.triggerWrongAnswer()
             
             // Show safety pop-up after 3 consecutive wrong answers
             if consecutiveWrongAnswers == 3 {

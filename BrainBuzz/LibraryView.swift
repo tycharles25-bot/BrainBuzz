@@ -11,6 +11,7 @@ import SwiftData
 struct LibraryView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var showingStatistics = false
+    @State private var showingWatchSettings = false
     @State private var showingMotivation = false
     @State private var showingHistory = false
     @State private var showingQuizOfTheDay = false
@@ -39,13 +40,13 @@ struct LibraryView: View {
                             showingStatistics = true
                         }
                         
-                        // Bracelet Card
+                        // Watch Settings Card
                         FeatureCard(
                             icon: "applewatch",
-                            title: "Bracelet",
+                            title: "Watch Settings",
                             color: .purple
                         ) {
-                            // Placeholder for bracelet functionality
+                            showingWatchSettings = true
                         }
                         
                         // Motivation Card
@@ -83,6 +84,9 @@ struct LibraryView: View {
         }
         .sheet(isPresented: $showingStatistics) {
             StatisticsView()
+        }
+        .sheet(isPresented: $showingWatchSettings) {
+            WatchSettingsView()
         }
         .sheet(isPresented: $showingMotivation) {
             MotivationView()
