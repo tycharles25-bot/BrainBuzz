@@ -180,24 +180,35 @@ class WatchBluetoothManager: NSObject, ObservableObject {
         let currentState = centralManager.state
         print("📱 Current state after check: \(currentState)")
         
-        // If state is unknown or resetting, we need to wait for callback
+        // If state is unknown or resetting, attempt to scan anyway to trigger permission request
         if currentState == .unknown || currentState == .resetting {
-            print("⏳ Waiting for Bluetooth initialization...")
-            connectionStatus = "Initializing Bluetooth..."
+            print("⏳ Bluetooth initializing - attempting scan to trigger permission...")
+            connectionStatus = "Requesting Bluetooth permission..."
             
-            // Give it 1 second to initialize
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                print("📱 Checking state again after 1 second: \(self.centralManager.state)")
+            // Try scanning to trigger the permission dialog
+            // This is safe even in unknown state
+            centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
+            
+            // Give it 2 seconds for state to update after permission grant
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                print("📱 Checking state again after 2 seconds: \(self.centralManager.state)")
                 
                 if self.centralManager.state == .poweredOn {
                     print("✅ Bluetooth ready after wait!")
                     self.connectionStatus = "Ready to Connect"
+                    self.centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
                 } else if self.centralManager.state == .unauthorized {
                     print("❌ Bluetooth unauthorized")
-                    self.connectionStatus = "Bluetooth permission required - check Settings"
+                    self.connectionStatus = "Bluetooth permission denied - please enable in Settings"
+                    self.centralManager.stopScan()
+                } else if self.centralManager.state == .unknown {
+                    print("❌ Still unknown state")
+                    self.connectionStatus = "Bluetooth not available - make sure Bluetooth is enabled in Settings"
+                    self.centralManager.stopScan()
                 } else {
                     print("❌ Bluetooth state: \(self.centralManager.state)")
                     self.connectionStatus = "Bluetooth not available (state: \(self.centralManager.state.rawValue))"
+                    self.centralManager.stopScan()
                 }
             }
             return
