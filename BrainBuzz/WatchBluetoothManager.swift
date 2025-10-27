@@ -151,6 +151,10 @@ class WatchBluetoothManager: NSObject, ObservableObject {
         centralManager = CBCentralManager(delegate: self, queue: nil)
         configuration.beepCount = 0  // 1 beep
         configuration.beepDuration = 0b001  // 100ms
+        
+        #if targetEnvironment(simulator)
+        print("⚠️ Running on iOS Simulator - Bluetooth requires a real device!")
+        #endif
     }
     
     // MARK: - Connection Management

@@ -11,6 +11,14 @@ struct WatchSettingsView: View {
     @StateObject private var watchManager = WatchBluetoothManager.shared
     @Environment(\.dismiss) private var dismiss
     
+    private var isSimulator: Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -63,7 +71,30 @@ struct WatchSettingsView: View {
                                 .fontWeight(.semibold)
                         }
                         
-                        if !watchManager.isConnected {
+                        if isSimulator {
+                            VStack(spacing: 12) {
+                                HStack {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundColor(.orange)
+                                    Text("iOS Simulator Detected")
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+                                }
+                                
+                                Text("Bluetooth requires a real device. Connect your iPhone or iPad to test watch functionality.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                
+                                Text("Run on a physical device to test Bluetooth features.")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(12)
+                            }
+                        } else if !watchManager.isConnected {
                             Button(action: {
                                 watchManager.startScanning()
                             }) {
