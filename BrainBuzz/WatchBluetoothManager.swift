@@ -164,24 +164,39 @@ class WatchBluetoothManager: NSObject, ObservableObject {
         print("📱 startScanning() called")
         print("📱 Bluetooth state: \(centralManager.state)")
         
-        // Try to start scanning regardless - this will trigger permission if needed
-        print("✅ Attempting to start Bluetooth scan...")
+        // Check if we need to wait
+        guard centralManager.state != .unknown && centralManager.state != .resetting else {
+            print("⏳ Bluetooth still initializing, waiting...")
+            connectionStatus = "Initializing Bluetooth..."
+            return
+        }
+        
+        // If not powered on, we can't scan
+        guard centralManager.state == .poweredOn else {
+            print("❌ Bluetooth not ready (state: \(centralManager.state))")
+            
+            switch centralManager.state {
+            case .poweredOff:
+                connectionStatus = "Please turn on Bluetooth in Settings"
+            case .unauthorized:
+                connectionStatus = "Bluetooth permission required"
+            case .unsupported:
+                connectionStatus = "Bluetooth not supported"
+            default:
+                connectionStatus = "Bluetooth not available"
+            }
+            return
+        }
+        
+        print("✅ Starting Bluetooth scan...")
         connectionStatus = "Scanning for watch..."
         
-        // Attempt to scan - if Bluetooth isn't ready, it will trigger permission prompt
+        // Start scanning - this will discover any BLE devices
         centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
-        
-        // If we're already powered on, we're good. Otherwise, wait for state update.
-        if centralManager.state == .poweredOn {
-            print("✅ Bluetooth ready - scanning initiated")
-        } else {
-            print("⏳ Waiting for Bluetooth to be ready (state: \(centralManager.state))")
-            connectionStatus = "Waiting for Bluetooth..."
-        }
         
         // Stop scanning after 10 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
-            if !self.isConnected && self.centralManager.state == .poweredOn {
+            if !self.isConnected {
                 print("⏱️ Scanning timeout - stopping scan")
                 self.centralManager.stopScan()
                 self.connectionStatus = "No watch found. Make sure your watch is powered on and nearby."
