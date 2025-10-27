@@ -142,6 +142,7 @@ class WatchBluetoothManager: NSObject, ObservableObject {
     private var centralManager: CBCentralManager!
     private var connectedPeripheral: CBPeripheral?
     private var commandCharacteristic: CBCharacteristic?
+    private var bluetoothQueue = DispatchQueue(label: "com.brainbuzz.bluetooth")
     
     // Configuration
     private var configuration = WatchConfiguration()
@@ -149,18 +150,22 @@ class WatchBluetoothManager: NSObject, ObservableObject {
     private override init() {
         super.init()
         
-        // Initialize Central Manager with proper options
+        print("🔧 Starting CBCentralManager initialization...")
+        
+        // Initialize Central Manager with proper options and background queue
+        // This is critical for iOS 13+ to properly request permissions
         let options: [String: Any] = [
-            CBCentralManagerOptionShowPowerAlertKey: true
+            CBCentralManagerOptionShowPowerAlertKey: true,
+            CBCentralManagerOptionRestoreIdentifierKey: "BrainBuzzWatchManager"
         ]
         
-        print("🔧 Initializing CBCentralManager...")
-        centralManager = CBCentralManager(delegate: self, queue: nil, options: options)
+        // Initialize on background queue to properly trigger permission requests
+        centralManager = CBCentralManager(delegate: self, queue: bluetoothQueue, options: options)
         
         configuration.beepCount = 0  // 1 beep
         configuration.beepDuration = 0b001  // 100ms
         
-        print("🔧 Initialized with delegate")
+        print("🔧 CBCentralManager initialized on background queue")
         
         #if targetEnvironment(simulator)
         print("⚠️ Running on iOS Simulator - Bluetooth requires a real device!")
@@ -313,30 +318,34 @@ class WatchBluetoothManager: NSObject, ObservableObject {
 extension WatchBluetoothManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         print("📡 Bluetooth state changed: \(central.state)")
+        print("📡 State raw value: \(central.state.rawValue)")
         
-        switch central.state {
-        case .poweredOn:
-            print("✅ Bluetooth powered on - ready to scan!")
-            connectionStatus = "Ready to Connect"
-        case .poweredOff:
-            print("❌ Bluetooth powered off")
-            connectionStatus = "Please turn on Bluetooth in Settings"
-            isConnected = false
-        case .unauthorized:
-            print("❌ Bluetooth unauthorized - need permission")
-            connectionStatus = "Bluetooth permission required"
-        case .unsupported:
-            print("❌ Bluetooth unsupported on this device")
-            connectionStatus = "Bluetooth not available"
-        case .unknown:
-            print("❓ Bluetooth state unknown")
-            connectionStatus = "Initializing Bluetooth..."
-        case .resetting:
-            print("🔄 Bluetooth resetting")
-            connectionStatus = "Resetting Bluetooth..."
-        @unknown default:
-            print("❓ Unknown Bluetooth state")
-            connectionStatus = "Bluetooth unknown state"
+        // Update UI on main thread since we're using a background queue
+        DispatchQueue.main.async {
+            switch central.state {
+            case .poweredOn:
+                print("✅ Bluetooth powered on - ready to scan!")
+                self.connectionStatus = "Ready to Connect"
+            case .poweredOff:
+                print("❌ Bluetooth powered off")
+                self.connectionStatus = "Please turn on Bluetooth in Settings"
+                self.isConnected = false
+            case .unauthorized:
+                print("❌ Bluetooth unauthorized - need permission")
+                self.connectionStatus = "Bluetooth permission required - please grant permission in Settings"
+            case .unsupported:
+                print("❌ Bluetooth unsupported on this device")
+                self.connectionStatus = "Bluetooth not supported"
+            case .unknown:
+                print("❓ Bluetooth state unknown - waiting for initialization...")
+                self.connectionStatus = "Waiting for Bluetooth..."
+            case .resetting:
+                print("🔄 Bluetooth resetting")
+                self.connectionStatus = "Resetting Bluetooth..."
+            @unknown default:
+                print("❓ Unknown Bluetooth state")
+                self.connectionStatus = "Bluetooth unknown state"
+            }
         }
     }
     
