@@ -8,6 +8,7 @@
 import Foundation
 import CoreBluetooth
 import Combine
+import UIKit
 
 // MARK: - Protocol Constants
 struct WatchProtocol {
@@ -183,6 +184,19 @@ class WatchBluetoothManager: NSObject, ObservableObject {
         print("📱 isConnected: \(isConnected)")
         print("📱 Bluetooth state: \(centralManager.state)")
         
+        // Check authorization status on iOS 13+
+        if #available(iOS 13.1, *) {
+            let authStatus = CBCentralManager.authorization
+            print("📱 Bluetooth authorization status: \(authStatus)")
+            
+            if authStatus == .denied {
+                print("❌ Bluetooth permission denied - opening Settings...")
+                connectionStatus = "Opening Settings..."
+                openBluetoothSettings()
+                return
+            }
+        }
+        
         let currentState = centralManager.state
         print("📱 Current state after check: \(currentState)")
         
@@ -194,6 +208,14 @@ class WatchBluetoothManager: NSObject, ObservableObject {
             // Try to scan - this will trigger the permission dialog on iOS 13+
             centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
             
+            // If still unknown after 2 seconds, open settings
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                if self.centralManager.state == .unknown {
+                    print("⏰ Still unknown after 2 seconds - opening Settings")
+                    self.connectionStatus = "Opening Settings..."
+                    self.openBluetoothSettings()
+                }
+            }
             return
         }
         
@@ -210,8 +232,11 @@ class WatchBluetoothManager: NSObject, ObservableObject {
             switch currentState {
             case .poweredOff:
                 connectionStatus = "Please turn on Bluetooth in Settings"
+                openBluetoothSettings()
             case .unauthorized:
-                connectionStatus = "Bluetooth permission required - check Settings"
+                print("❌ Unauthorized - opening Settings")
+                connectionStatus = "Opening Settings..."
+                openBluetoothSettings()
             case .unsupported:
                 connectionStatus = "Bluetooth not supported"
             default:
@@ -248,6 +273,26 @@ class WatchBluetoothManager: NSObject, ObservableObject {
         commandCharacteristic = nil
         isConnected = false
         connectionStatus = "Disconnected"
+    }
+    
+    // MARK: - Settings Navigation
+    private func openBluetoothSettings() {
+        print("📱 Opening Settings app...")
+        
+        if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+            if UIApplication.shared.canOpenURL(settingsURL) {
+                UIApplication.shared.open(settingsURL, completionHandler: { success in
+                    print("📱 Settings opened: \(success)")
+                    if success {
+                        DispatchQueue.main.async {
+                            self.connectionStatus = "Go to: Settings > BrainBuzz > enable Bluetooth"
+                        }
+                    }
+                })
+            } else {
+                print("❌ Cannot open Settings URL")
+            }
+        }
     }
     
     // MARK: - Command Sending
