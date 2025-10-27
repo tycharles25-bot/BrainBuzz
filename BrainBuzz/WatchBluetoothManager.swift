@@ -157,11 +157,21 @@ class WatchBluetoothManager: NSObject, ObservableObject {
     func startScanning() {
         guard centralManager.state == .poweredOn else {
             print("Bluetooth is not powered on")
+            connectionStatus = "Bluetooth not available"
             return
         }
         
-        centralManager.scanForPeripherals(withServices: nil, options: nil)
-        connectionStatus = "Scanning..."
+        print("Starting Bluetooth scan...")
+        connectionStatus = "Scanning for watch..."
+        centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
+        
+        // Stop scanning after 10 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+            if !self.isConnected {
+                self.centralManager.stopScan()
+                self.connectionStatus = "No watch found. Make sure your watch is powered on and nearby."
+            }
+        }
     }
     
     func stopScanning() {
@@ -259,11 +269,15 @@ extension WatchBluetoothManager: CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        // Implement peripheral discovery logic
-        // For now, auto-connect to first available device
+        print("Discovered peripheral: \(peripheral.name ?? "Unknown")")
+        
+        // Connect to first device with a name (or you can filter by specific name)
         if connectedPeripheral == nil {
+            print("Connecting to peripheral...")
+            connectionStatus = "Connecting to \(peripheral.name ?? "device")..."
             connectedPeripheral = peripheral
             centralManager.connect(peripheral, options: nil)
+            centralManager.stopScan()  // Stop scanning once we found a device
         }
     }
     
