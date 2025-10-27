@@ -35,8 +35,7 @@ struct WatchProtocol {
     
     enum ResponseStatus: UInt8 {
         case success = 0x01
-        case checksumFailure = 0x02
-        case lengthExceed = 0x02
+        case failure = 0x02  // Covers both checksum failure and length exceed (both 0x02)
     }
 }
 
