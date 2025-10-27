@@ -148,11 +148,19 @@ class WatchBluetoothManager: NSObject, ObservableObject {
     
     private override init() {
         super.init()
-        // Use CBCentralManagerOptionShowPowerAlertKey for better debugging
-        let options: [String: Any] = [CBCentralManagerOptionShowPowerAlertKey: true]
+        
+        // Initialize Central Manager with proper options
+        let options: [String: Any] = [
+            CBCentralManagerOptionShowPowerAlertKey: true
+        ]
+        
+        print("🔧 Initializing CBCentralManager...")
         centralManager = CBCentralManager(delegate: self, queue: nil, options: options)
+        
         configuration.beepCount = 0  // 1 beep
         configuration.beepDuration = 0b001  // 100ms
+        
+        print("🔧 Initialized with delegate")
         
         #if targetEnvironment(simulator)
         print("⚠️ Running on iOS Simulator - Bluetooth requires a real device!")
