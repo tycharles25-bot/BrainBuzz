@@ -155,19 +155,23 @@ class WatchBluetoothManager: NSObject, ObservableObject {
     
     // MARK: - Connection Management
     func startScanning() {
+        print("📱 startScanning() called")
+        print("📱 Bluetooth state: \(centralManager.state.rawValue)")
+        
         guard centralManager.state == .poweredOn else {
-            print("Bluetooth is not powered on")
+            print("❌ Bluetooth is not powered on - state: \(centralManager.state.rawValue)")
             connectionStatus = "Bluetooth not available"
             return
         }
         
-        print("Starting Bluetooth scan...")
+        print("✅ Starting Bluetooth scan...")
         connectionStatus = "Scanning for watch..."
         centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
         
         // Stop scanning after 10 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
             if !self.isConnected {
+                print("⏱️ Scanning timeout - stopping scan")
                 self.centralManager.stopScan()
                 self.connectionStatus = "No watch found. Make sure your watch is powered on and nearby."
             }
@@ -253,17 +257,30 @@ class WatchBluetoothManager: NSObject, ObservableObject {
 // MARK: - CBCentralManagerDelegate
 extension WatchBluetoothManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        print("📡 Bluetooth state changed: \(central.state)")
+        
         switch central.state {
         case .poweredOn:
+            print("✅ Bluetooth powered on")
             connectionStatus = "Ready"
         case .poweredOff:
+            print("❌ Bluetooth powered off")
             connectionStatus = "Bluetooth Off"
             isConnected = false
         case .unauthorized:
+            print("❌ Bluetooth unauthorized")
             connectionStatus = "Unauthorized"
         case .unsupported:
+            print("❌ Bluetooth unsupported")
             connectionStatus = "Unsupported"
-        default:
+        case .unknown:
+            print("❓ Bluetooth state unknown")
+            connectionStatus = "Initializing..."
+        case .resetting:
+            print("🔄 Bluetooth resetting")
+            connectionStatus = "Resetting..."
+        @unknown default:
+            print("❓ Unknown Bluetooth state")
             connectionStatus = "Unknown"
         }
     }
