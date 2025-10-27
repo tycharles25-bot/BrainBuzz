@@ -148,7 +148,9 @@ class WatchBluetoothManager: NSObject, ObservableObject {
     
     private override init() {
         super.init()
-        centralManager = CBCentralManager(delegate: self, queue: nil)
+        // Use CBCentralManagerOptionShowPowerAlertKey for better debugging
+        let options: [String: Any] = [CBCentralManagerOptionShowPowerAlertKey: true]
+        centralManager = CBCentralManager(delegate: self, queue: nil, options: options)
         configuration.beepCount = 0  // 1 beep
         configuration.beepDuration = 0b001  // 100ms
         
@@ -265,27 +267,27 @@ extension WatchBluetoothManager: CBCentralManagerDelegate {
         
         switch central.state {
         case .poweredOn:
-            print("✅ Bluetooth powered on")
-            connectionStatus = "Ready"
+            print("✅ Bluetooth powered on - ready to scan!")
+            connectionStatus = "Ready to Connect"
         case .poweredOff:
             print("❌ Bluetooth powered off")
-            connectionStatus = "Bluetooth Off"
+            connectionStatus = "Please turn on Bluetooth in Settings"
             isConnected = false
         case .unauthorized:
-            print("❌ Bluetooth unauthorized")
-            connectionStatus = "Unauthorized"
+            print("❌ Bluetooth unauthorized - need permission")
+            connectionStatus = "Bluetooth permission required"
         case .unsupported:
-            print("❌ Bluetooth unsupported")
-            connectionStatus = "Unsupported"
+            print("❌ Bluetooth unsupported on this device")
+            connectionStatus = "Bluetooth not available"
         case .unknown:
             print("❓ Bluetooth state unknown")
-            connectionStatus = "Initializing..."
+            connectionStatus = "Initializing Bluetooth..."
         case .resetting:
             print("🔄 Bluetooth resetting")
-            connectionStatus = "Resetting..."
+            connectionStatus = "Resetting Bluetooth..."
         @unknown default:
             print("❓ Unknown Bluetooth state")
-            connectionStatus = "Unknown"
+            connectionStatus = "Bluetooth unknown state"
         }
     }
     
