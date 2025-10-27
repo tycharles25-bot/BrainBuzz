@@ -171,23 +171,44 @@ class WatchBluetoothManager: NSObject, ObservableObject {
     func startScanning() {
         print("📱 startScanning() called")
         print("📱 Bluetooth state: \(centralManager.state)")
+        print("📱 isConnected: \(isConnected)")
         
-        // Check if we need to wait
-        guard centralManager.state != .unknown && centralManager.state != .resetting else {
-            print("⏳ Bluetooth still initializing, waiting...")
+        // Force a state check by accessing the property
+        let currentState = centralManager.state
+        print("📱 Current state after check: \(currentState)")
+        
+        // If state is unknown or resetting, we need to wait for callback
+        if currentState == .unknown || currentState == .resetting {
+            print("⏳ Waiting for Bluetooth initialization...")
             connectionStatus = "Initializing Bluetooth..."
+            
+            // Give it 1 second to initialize
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                print("📱 Checking state again after 1 second: \(self.centralManager.state)")
+                
+                if self.centralManager.state == .poweredOn {
+                    print("✅ Bluetooth ready after wait!")
+                    self.connectionStatus = "Ready to Connect"
+                } else if self.centralManager.state == .unauthorized {
+                    print("❌ Bluetooth unauthorized")
+                    self.connectionStatus = "Bluetooth permission required - check Settings"
+                } else {
+                    print("❌ Bluetooth state: \(self.centralManager.state)")
+                    self.connectionStatus = "Bluetooth not available (state: \(self.centralManager.state.rawValue))"
+                }
+            }
             return
         }
         
         // If not powered on, we can't scan
-        guard centralManager.state == .poweredOn else {
-            print("❌ Bluetooth not ready (state: \(centralManager.state))")
+        guard currentState == .poweredOn else {
+            print("❌ Bluetooth not ready (state: \(currentState))")
             
-            switch centralManager.state {
+            switch currentState {
             case .poweredOff:
                 connectionStatus = "Please turn on Bluetooth in Settings"
             case .unauthorized:
-                connectionStatus = "Bluetooth permission required"
+                connectionStatus = "Bluetooth permission required - check Settings"
             case .unsupported:
                 connectionStatus = "Bluetooth not supported"
             default:
