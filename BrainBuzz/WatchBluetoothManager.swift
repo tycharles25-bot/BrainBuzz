@@ -200,20 +200,26 @@ class WatchBluetoothManager: NSObject, ObservableObject {
         let currentState = centralManager.state
         print("📱 Current state after check: \(currentState)")
         
-        // If state is unknown, try scanning anyway - this will trigger permission request
+        // If state is unknown, we need to wait for initialization - BUT we also need to try scanning
+        // to trigger the permission dialog on first launch
         if currentState == .unknown {
-            print("⏳ Bluetooth state unknown - attempting scan to trigger permission...")
+            print("⏳ Bluetooth state unknown - waiting for initialization...")
+            
+            // On first launch, try scanning to trigger permission dialog
+            // This works because the delegate hasn't been called yet
+            centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
             connectionStatus = "Requesting Bluetooth permission..."
             
-            // Try to scan - this will trigger the permission dialog on iOS 13+
-            centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
-            
-            // If still unknown after 2 seconds, open settings
+            // If no permission dialog appears after 2 seconds, open Settings
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                if self.centralManager.state == .unknown {
-                    print("⏰ Still unknown after 2 seconds - opening Settings")
+                if self.centralManager.state == .unknown || self.centralManager.state == .unauthorized {
+                    print("⏰ No permission - opening Settings")
                     self.connectionStatus = "Opening Settings..."
                     self.openBluetoothSettings()
+                    self.centralManager.stopScan()
+                } else if self.centralManager.state == .poweredOn {
+                    // Permission was granted!
+                    self.connectionStatus = "Scanning for watch..."
                 }
             }
             return
