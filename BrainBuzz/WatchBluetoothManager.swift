@@ -153,19 +153,24 @@ class WatchBluetoothManager: NSObject, ObservableObject {
         print("🔧 Starting CBCentralManager initialization...")
         
         // Initialize Central Manager with proper options
-        // CRITICAL: Must use a background queue (not main) for iOS 13+ to trigger permission dialog
+        // IMPORTANT: Using main queue (nil) - iOS 13+ will prompt for permission when we first scan
         let options: [String: Any] = [
             CBCentralManagerOptionShowPowerAlertKey: true
         ]
         
-        // Use background queue to properly trigger permission request
-        centralManager = CBCentralManager(delegate: self, queue: bluetoothQueue, options: options)
+        // Use main queue - permission will be prompted when we try to scan
+        centralManager = CBCentralManager(delegate: self, queue: nil, options: options)
         
         configuration.beepCount = 0  // 1 beep
         configuration.beepDuration = 0b001  // 100ms
         
-        print("🔧 CBCentralManager initialized on background queue")
+        print("🔧 CBCentralManager initialized on main queue")
         print("🔧 Initial state: \(centralManager.state)")
+        
+        // Check state immediately
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            print("📱 State after 0.5s: \(self.centralManager.state)")
+        }
         
         #if targetEnvironment(simulator)
         print("⚠️ Running on iOS Simulator - Bluetooth requires a real device!")
@@ -181,10 +186,20 @@ class WatchBluetoothManager: NSObject, ObservableObject {
         let currentState = centralManager.state
         print("📱 Current state after check: \(currentState)")
         
-        // If state is unknown or resetting, we're still waiting for iOS to initialize Bluetooth
-        if currentState == .unknown || currentState == .resetting {
-            print("⏳ Bluetooth state is still unknown/resetting")
-            connectionStatus = "Initializing Bluetooth..."
+        // If state is unknown, try scanning anyway - this will trigger permission request
+        if currentState == .unknown {
+            print("⏳ Bluetooth state unknown - attempting scan to trigger permission...")
+            connectionStatus = "Requesting Bluetooth permission..."
+            
+            // Try to scan - this will trigger the permission dialog on iOS 13+
+            centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
+            
+            return
+        }
+        
+        if currentState == .resetting {
+            print("⏳ Bluetooth resetting - please wait")
+            connectionStatus = "Resetting Bluetooth..."
             return
         }
         
@@ -303,32 +318,30 @@ extension WatchBluetoothManager: CBCentralManagerDelegate {
         print("📡 Bluetooth state changed: \(central.state)")
         print("📡 State raw value: \(central.state.rawValue)")
         
-        // Update on main thread since delegate runs on background queue
-        DispatchQueue.main.async {
-            switch central.state {
-            case .poweredOn:
-                print("✅ Bluetooth powered on - ready to scan!")
-                self.connectionStatus = "Ready to Connect"
-            case .poweredOff:
-                print("❌ Bluetooth powered off")
-                self.connectionStatus = "Please turn on Bluetooth in Settings"
-                self.isConnected = false
-            case .unauthorized:
-                print("❌ Bluetooth unauthorized - need permission")
-                self.connectionStatus = "Bluetooth permission denied - please enable in Settings"
-            case .unsupported:
-                print("❌ Bluetooth unsupported on this device")
-                self.connectionStatus = "Bluetooth not supported"
-            case .unknown:
-                print("❓ Bluetooth state unknown - waiting for initialization...")
-                self.connectionStatus = "Waiting for Bluetooth..."
-            case .resetting:
-                print("🔄 Bluetooth resetting")
-                self.connectionStatus = "Resetting Bluetooth..."
-            @unknown default:
-                print("❓ Unknown Bluetooth state")
-                self.connectionStatus = "Bluetooth unknown state"
-            }
+        // We're on main thread
+        switch central.state {
+        case .poweredOn:
+            print("✅ Bluetooth powered on - ready to scan!")
+            connectionStatus = "Ready to Connect"
+        case .poweredOff:
+            print("❌ Bluetooth powered off")
+            connectionStatus = "Please turn on Bluetooth in Settings"
+            isConnected = false
+        case .unauthorized:
+            print("❌ Bluetooth unauthorized - need permission")
+            connectionStatus = "Bluetooth permission denied - please enable in Settings"
+        case .unsupported:
+            print("❌ Bluetooth unsupported on this device")
+            connectionStatus = "Bluetooth not supported"
+        case .unknown:
+            print("❓ Bluetooth state unknown - waiting for initialization...")
+            connectionStatus = "Waiting for Bluetooth..."
+        case .resetting:
+            print("🔄 Bluetooth resetting")
+            connectionStatus = "Resetting Bluetooth..."
+        @unknown default:
+            print("❓ Unknown Bluetooth state")
+            connectionStatus = "Bluetooth unknown state"
         }
     }
     
@@ -338,10 +351,7 @@ extension WatchBluetoothManager: CBCentralManagerDelegate {
         // Connect to first device with a name (or you can filter by specific name)
         if connectedPeripheral == nil {
             print("Connecting to peripheral...")
-            
-            DispatchQueue.main.async {
-                self.connectionStatus = "Connecting to \(peripheral.name ?? "device")..."
-            }
+            connectionStatus = "Connecting to \(peripheral.name ?? "device")..."
             
             connectedPeripheral = peripheral
             centralManager.connect(peripheral, options: nil)
@@ -352,24 +362,17 @@ extension WatchBluetoothManager: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         peripheral.delegate = self
         peripheral.discoverServices(nil)
-        
-        DispatchQueue.main.async {
-            self.connectionStatus = "Connected - Discovering Services..."
-        }
+        connectionStatus = "Connected - Discovering Services..."
     }
     
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        DispatchQueue.main.async {
-            self.connectionStatus = "Connection Failed"
-        }
+        connectionStatus = "Connection Failed"
         connectedPeripheral = nil
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        DispatchQueue.main.async {
-            self.isConnected = false
-            self.connectionStatus = "Disconnected"
-        }
+        isConnected = false
+        connectionStatus = "Disconnected"
         connectedPeripheral = nil
     }
 }
@@ -399,10 +402,8 @@ extension WatchBluetoothManager: CBPeripheralDelegate {
         }
         
         if commandCharacteristic != nil {
-            DispatchQueue.main.async {
-                self.isConnected = true
-                self.connectionStatus = "Connected"
-            }
+            isConnected = true
+            connectionStatus = "Connected"
             
             // Send initial configuration
             setMode(currentMode)
@@ -419,9 +420,7 @@ extension WatchBluetoothManager: CBPeripheralDelegate {
             if bytes[3] == WatchProtocol.KeyCommand.batteryInfo.rawValue {
                 // Parse battery info
                 if bytes.count >= 7 {
-                    DispatchQueue.main.async {
-                        self.batteryLevel = Int(bytes[4])
-                    }
+                    batteryLevel = Int(bytes[4])
                 }
             }
         }
