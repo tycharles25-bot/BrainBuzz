@@ -317,25 +317,33 @@ extension WatchBluetoothManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         print("📡 Bluetooth state changed: \(central.state)")
         print("📡 State raw value: \(central.state.rawValue)")
+        print("📡 State description: \(String(describing: central.state))")
         
         // We're on main thread
         switch central.state {
         case .poweredOn:
             print("✅ Bluetooth powered on - ready to scan!")
             connectionStatus = "Ready to Connect"
+            
+            // If we were trying to scan, automatically start
+            if !isConnected {
+                print("🔄 Auto-starting scan since we're powered on")
+                centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
+                connectionStatus = "Scanning for watch..."
+            }
         case .poweredOff:
             print("❌ Bluetooth powered off")
             connectionStatus = "Please turn on Bluetooth in Settings"
             isConnected = false
         case .unauthorized:
-            print("❌ Bluetooth unauthorized - need permission")
-            connectionStatus = "Bluetooth permission denied - please enable in Settings"
+            print("❌ Bluetooth unauthorized - permission denied!")
+            connectionStatus = "Bluetooth permission denied - go to Settings > BrainBuzz > enable Bluetooth"
         case .unsupported:
             print("❌ Bluetooth unsupported on this device")
             connectionStatus = "Bluetooth not supported"
         case .unknown:
-            print("❓ Bluetooth state unknown - waiting for initialization...")
-            connectionStatus = "Waiting for Bluetooth..."
+            print("❓ Bluetooth state unknown - STILL WAITING")
+            connectionStatus = "Waiting for Bluetooth - try tapping Scan again..."
         case .resetting:
             print("🔄 Bluetooth resetting")
             connectionStatus = "Resetting Bluetooth..."
